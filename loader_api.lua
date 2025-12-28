@@ -316,14 +316,15 @@ local function StartLoader()
     end)
     
     GetKeyBtn.MouseButton1Click:Connect(function()
-        Status.Text = "🔗 Link copied!"
+        Status.Text = "🔗 Opening key page..."
         Status.TextColor3 = Color3.fromRGB(100, 200, 255)
-        pcall(function() setclipboard(config.linkvertise_link or "") end)
+        pcall(function() setclipboard("https://link-hub.net/1298783/r3zeQvtZypGR") end)
+        Status.Text = "🔗 Link copied! Paste in browser."
     end)
     
     DiscordBtn.MouseButton1Click:Connect(function()
-        pcall(function() setclipboard(config.discord or "") end)
-        Status.Text = "📋 Discord copied!"
+        pcall(function() setclipboard("https://discord.gg/8wj4EgdE") end)
+        Status.Text = "📋 Discord link copied!"
         Status.TextColor3 = Color3.fromRGB(88, 101, 242)
     end)
     
