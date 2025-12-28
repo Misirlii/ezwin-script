@@ -11,6 +11,7 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -97,18 +98,64 @@ local function StartLoader()
     -- Key UI
     local KeyGui = Instance.new("ScreenGui", CoreGui)
     KeyGui.Name = "EZWIN_Key"
+    KeyGui.ResetOnSpawn = false
     
     local Blur = Instance.new("Frame", KeyGui)
     Blur.Size = UDim2.new(1, 0, 1, 0)
     Blur.BackgroundColor3 = Color3.new(0, 0, 0)
-    Blur.BackgroundTransparency = 0.4
+    Blur.BackgroundTransparency = 1
+    
+    -- Snow container
+    local SnowContainer = Instance.new("Frame", KeyGui)
+    SnowContainer.Size = UDim2.new(1, 0, 1, 0)
+    SnowContainer.BackgroundTransparency = 1
+    SnowContainer.ClipsDescendants = true
+    
+    -- Create snowflakes
+    local snowflakes = {}
+    for i = 1, 40 do
+        local snow = Instance.new("TextLabel", SnowContainer)
+        snow.Text = "❄"
+        snow.TextColor3 = Color3.new(1, 1, 1)
+        snow.TextTransparency = math.random(4, 8) / 10
+        snow.TextSize = math.random(12, 22)
+        snow.BackgroundTransparency = 1
+        snow.Position = UDim2.new(math.random() * 1, 0, -0.1, 0)
+        snow.Size = UDim2.new(0, 25, 0, 25)
+        table.insert(snowflakes, {obj = snow, speed = math.random(40, 120) / 100, sway = math.random(-30, 30) / 100})
+    end
+    
+    -- Animate snow
+    local snowConn = RunService.RenderStepped:Connect(function(dt)
+        for _, f in ipairs(snowflakes) do
+            local p = f.obj.Position
+            local newY = p.Y.Scale + (dt * f.speed * 0.25)
+            local newX = p.X.Scale + (math.sin(tick() + f.speed) * f.sway * dt * 0.08)
+            if newY > 1.1 then newY = -0.1; newX = math.random() end
+            f.obj.Position = UDim2.new(newX, 0, newY, 0)
+        end
+    end)
     
     local Main = Instance.new("Frame", KeyGui)
-    Main.Size = UDim2.new(0, 400, 0, 320)
-    Main.Position = UDim2.new(0.5, -200, 0.5, -160)
-    Main.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
-    Instance.new("UIStroke", Main).Color = Color3.fromRGB(100, 150, 255)
+    Main.Size = UDim2.new(0, 420, 0, 350)
+    Main.Position = UDim2.new(0.5, -210, 1.5, 0)
+    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 16)
+    local MainStroke = Instance.new("UIStroke", Main)
+    MainStroke.Color = Color3.fromRGB(100, 150, 255)
+    MainStroke.Thickness = 2
+    
+    -- Close button
+    local CloseBtn = Instance.new("TextButton", Main)
+    CloseBtn.Size = UDim2.new(0, 32, 0, 32)
+    CloseBtn.Position = UDim2.new(1, -42, 0, 10)
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+    CloseBtn.BackgroundTransparency = 0.7
+    CloseBtn.Text = "✕"
+    CloseBtn.TextColor3 = Color3.fromRGB(255, 150, 150)
+    CloseBtn.TextSize = 16
+    CloseBtn.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
     
     local Title = Instance.new("TextLabel", Main)
     Title.Size = UDim2.new(1, 0, 0, 45)
@@ -201,6 +248,29 @@ local function StartLoader()
     VerLbl.TextSize = 10
     
     local verified = false
+    local closed = false
+    
+    -- Entrance animation
+    TweenService:Create(Blur, TweenInfo.new(0.4), {BackgroundTransparency = 0.4}):Play()
+    TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, -210, 0.5, -175)}):Play()
+    
+    -- Close button hover
+    CloseBtn.MouseEnter:Connect(function()
+        TweenService:Create(CloseBtn, TweenInfo.new(0.2), {BackgroundTransparency = 0.3, TextColor3 = Color3.new(1,1,1)}):Play()
+    end)
+    CloseBtn.MouseLeave:Connect(function()
+        TweenService:Create(CloseBtn, TweenInfo.new(0.2), {BackgroundTransparency = 0.7, TextColor3 = Color3.fromRGB(255,150,150)}):Play()
+    end)
+    
+    -- Close button click
+    CloseBtn.MouseButton1Click:Connect(function()
+        closed = true
+        snowConn:Disconnect()
+        TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(0.5, -210, 1.5, 0)}):Play()
+        TweenService:Create(Blur, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+        task.wait(0.5)
+        KeyGui:Destroy()
+    end)
     
     VerifyBtn.MouseButton1Click:Connect(function()
         local key = KeyInput.Text
@@ -226,9 +296,12 @@ local function StartLoader()
             Status.TextColor3 = Color3.fromRGB(100, 255, 100)
             verified = true
             
-            TweenService:Create(Main, TweenInfo.new(0.4), {Position = UDim2.new(0.5, -200, -0.5, 0)}):Play()
-            TweenService:Create(Blur, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+            TweenService:Create(MainStroke, TweenInfo.new(0.3), {Color = Color3.fromRGB(100, 255, 150)}):Play()
             task.wait(0.5)
+            snowConn:Disconnect()
+            TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(0.5, -210, -0.5, 0)}):Play()
+            TweenService:Create(Blur, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+            task.wait(0.6)
             KeyGui:Destroy()
         else
             Status.Text = "❌ " .. result.message
@@ -258,7 +331,9 @@ local function StartLoader()
         if enter then VerifyBtn.MouseButton1Click:Fire() end
     end)
     
-    repeat task.wait(0.1) until verified
+    repeat task.wait(0.1) until verified or closed
+    
+    if closed then return end
     
     -- Script'i API'den çek
     Status.Text = "⏳ Loading script..."
